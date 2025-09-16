@@ -16,12 +16,18 @@ void renderObjects()
     glClearColor(0.5f, 0.25f, 0.25f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // Vertices for first triangle
+    // Vertices for first triangles (square)
     float vertices[] =
     {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f
+        0.5f,  0.5f, 0.0f,  // top right
+        0.5f, -0.5f, 0.0f,  // bottom right
+       -0.5f, -0.5f, 0.0f,  // bottom left
+       -0.5f,  0.5f, 0.0f   // top left
+   };
+    unsigned int indices[] =
+    {  // note that we start from 0!
+        0, 1, 3,   // first triangle
+        1, 2, 3    // second triangle
     };
 
     // Generate VAO
@@ -30,15 +36,27 @@ void renderObjects()
 
     // Generate VBO
     unsigned int VBO;
-    glGenBuffers(1, &VBO); // Create a buffer and get its ID
+    glGenBuffers(1, &VBO);
 
-    // Bind VAO, then VBO
+    // Generate EBO
+    unsigned int EBO;
+    glGenBuffers(1, &EBO);
+
+    // Bind VAO
     glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO); // Bind the buffer to the GL_ARRAY_BUFFER target
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW); // Upload vertex data to the buffer
+
+    // Bind and set VBO data
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    // Bind and set EBO data
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // Set vertex attribute pointer
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), static_cast<void *>(0));
+    constexpr GLuint positionAttribLocation = 0;
+    constexpr GLuint offset = 0;  // Start reading from the beginning of the buffer
+    glVertexAttribPointer(positionAttribLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void*>(offset));
     glEnableVertexAttribArray(0);
 
     // Unbind VAO so other VAO calls won't unintentionally modify this VAO
@@ -95,7 +113,7 @@ void renderObjects()
         std::cerr << "Error compiling fragment shader:\n" << infoLog << std::endl;
     }
 
-    // Create shader program and ttach previously compiled vertex and fragment shaders
+    // Create shader program and attach previously compiled vertex and fragment shaders
     unsigned int shaderProgram = glCreateProgram();
     glAttachShader(shaderProgram, vertexShader);
     glAttachShader(shaderProgram, fragmentShader);
@@ -115,8 +133,8 @@ void renderObjects()
     // Set shader program
     glUseProgram(shaderProgram);
 
-    // Finally draw our triangle
-    glDrawArrays(GL_TRIANGLES, 0, 3);
+    // Finally draw our 2 triangles (square) using the values set in the EBO, which indexes into the VBO
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
 int main(int argc, char * argv[])
