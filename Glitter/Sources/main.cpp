@@ -13,22 +13,36 @@
 void renderObjects()
 {
     // Background Fill Color
-    glClearColor(0.5f, 0.25f, 0.25f, 1.0f);
+    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // Vertices for first triangles (square)
-    float vertices[] =
-    {
-        0.5f,  0.5f, 0.0f,  // top right
-        0.5f, -0.5f, 0.0f,  // bottom right
-       -0.5f, -0.5f, 0.0f,  // bottom left
-       -0.5f,  0.5f, 0.0f   // top left
-   };
-    unsigned int indices[] =
-    {  // note that we start from 0!
-        0, 1, 3,   // first triangle
-        1, 2, 3    // second triangle
-    };
+   //  // Vertices for first triangles (square)
+   //  float vertices[] =
+   //  {
+   //      0.5f,  0.5f, 0.0f,  // top right
+   //      0.5f, -0.5f, 0.0f,  // bottom right
+   //     -0.5f, -0.5f, 0.0f,  // bottom left
+   //     -0.5f,  0.5f, 0.0f   // top left
+   // };
+   //  unsigned int indices[] =
+   //  {  // note that we start from 0!
+   //      0, 1, 3,   // first triangle
+   //      1, 2, 3    // second triangle
+   //  };
+
+     // Vertices for first triangles (square)
+     float vertices[] =
+     {
+         0.0f,  0.5f, 0.0f,  // top
+        -0.5f, -0.5f, 0.0f,  // bottom left
+         0.5f, -0.5f, 0.0f   // bottom right
+
+     };
+     unsigned int indices[] =
+     {
+         // note that we start from 0!
+         0, 1, 2   // first triangle
+     };
 
     // Generate VAO
     unsigned int VAO;
@@ -67,9 +81,12 @@ void renderObjects()
         #version 330 core
         layout(location = 0) in vec3 aPos;
 
+        out vec4 vertexColor; // specify a color output to the fragment shader
+
         void main()
         {
-            gl_Position = vec4(aPos.x, aPos.y, aPos.z, 1.0);
+            gl_Position = vec4(aPos, 1.0);
+            vertexColor = vec4(0.5, 0.0, 0.0, 1.0);
         }
     )";
 
@@ -94,9 +111,11 @@ void renderObjects()
         #version 330 core
         out vec4 FragColor;
 
+        in vec4 vertexColor; // the input variable from the vertex shader (same name and same type)
+
         void main()
         {
-            FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);
+            FragColor = vertexColor;
         }
     )";
 
