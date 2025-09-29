@@ -51,37 +51,22 @@ int main(int argc, char * argv[])
     gladLoadGL();
     std::cerr << "OpenGL " << glGetString(GL_VERSION) << std::endl;
 
-        // Background Fill Color
+    // Background Fill Color
     glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-   //  // Vertices for first triangles (square)
-   //  float vertices[] =
-   //  {
-   //      0.5f,  0.5f, 0.0f,  // top right
-   //      0.5f, -0.5f, 0.0f,  // bottom right
-   //     -0.5f, -0.5f, 0.0f,  // bottom left
-   //     -0.5f,  0.5f, 0.0f   // top left
-   // };
-   //  unsigned int indices[] =
-   //  {  // note that we start from 0!
-   //      0, 1, 3,   // first triangle
-   //      1, 2, 3    // second triangle
-   //  };
-
-     // Vertices for triangle
-     float vertices[] =
-     {
-         0.0f,  0.5f, 0.0f,  // top
-        -0.5f, -0.5f, 0.0f,  // bottom left
-         0.5f, -0.5f, 0.0f   // bottom right
-
-     };
-     unsigned int indices[] =
-     {
-         // note that we start from 0!
-         0, 1, 2   // first triangle
-     };
+    // Vertices for triangle
+    float vertices[] = {
+        // positions        // colors
+        0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
+       -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
+        0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top
+    };
+    unsigned int indices[] =
+    {
+        // Note that we start from 0!
+        0, 1, 2   // first triangle
+    };
 
     // Generate VAO
     unsigned int VAO;
@@ -106,11 +91,19 @@ int main(int argc, char * argv[])
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
-    // Set vertex attribute pointer
+    // Set vertex attribute pointer for position
     constexpr GLuint positionAttribLocation = 0;
-    constexpr GLuint offset = 0;  // Start reading from the beginning of the buffer
-    glVertexAttribPointer(positionAttribLocation, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), reinterpret_cast<void*>(offset));
-    glEnableVertexAttribArray(0);
+    constexpr GLuint positionStride = 6 * sizeof(float);  // Each vertex has 6 floats (3 for position, 3 for color)
+    constexpr GLuint positionOffset = 0;  // Start reading from the beginning of the buffer
+    glVertexAttribPointer(positionAttribLocation, 3, GL_FLOAT, GL_FALSE, positionStride, reinterpret_cast<void*>(positionOffset));
+    glEnableVertexAttribArray(positionAttribLocation);
+
+    // Set vertex attribute pointer for color
+    constexpr GLuint colorAttribLocation = 1;
+    constexpr GLuint colorStride = 6 * sizeof(float);  // Each vertex has 6 floats (3 for position, 3 for color)
+    constexpr GLuint colorOffset = 3 * sizeof(float);  // Start reading from after position values
+    glVertexAttribPointer(colorAttribLocation, 3, GL_FLOAT, GL_FALSE, colorStride, reinterpret_cast<void*>(colorOffset));
+    glEnableVertexAttribArray(colorAttribLocation);
 
     // Unbind VAO so other VAO calls won't unintentionally modify this VAO
     glBindVertexArray(0);
@@ -118,11 +111,15 @@ int main(int argc, char * argv[])
     // Source code for vertex shader
     const char * vertexShaderSource = R"(
         #version 330 core
-        layout(location = 0) in vec3 aPos;
+        layout (location = 0) in vec3 aPos;
+        layout (location = 1) in vec3 aColor;
+
+        out vec3 ourColor; // output a color to the fragment shader
 
         void main()
         {
             gl_Position = vec4(aPos, 1.0);
+            ourColor = aColor;
         }
     )";
 
@@ -146,12 +143,11 @@ int main(int argc, char * argv[])
     const char * fragmentShaderSource = R"(
         #version 330 core
         out vec4 FragColor;
-
-        uniform vec4 ourColor; // This value gets set in the OpenGL code running on the CPU.
+        in vec3 ourColor;
 
         void main()
         {
-            FragColor = ourColor;
+            FragColor = vec4(ourColor, 1.0);
         }
     )";
 
@@ -190,7 +186,7 @@ int main(int argc, char * argv[])
             glfwSetWindowShouldClose(mWindow, true);
         }
 
-
+        // Assign
         float timeValue = static_cast<float>(glfwGetTime());
         float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
         int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
