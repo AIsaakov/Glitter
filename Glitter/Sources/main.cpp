@@ -10,10 +10,49 @@
 #include <cstdlib>
 #include <iostream>
 
-void renderObjects()
+void renderObjects(unsigned int VAO, unsigned int shaderProgram)
 {
-    // Background Fill Color
-    glClearColor(0.25f, 0.25f, 0.25f, 1.0f);
+    // Rebind VAO
+    glBindVertexArray(VAO);
+
+    // Set shader program
+    glUseProgram(shaderProgram);
+
+    // Finally draw our 2 triangles (square) using the values set in the EBO, which indexes into the VBO
+    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+
+    // Unbind VAO so other VAO calls won't unintentionally modify this VAO
+    glBindVertexArray(0);
+}
+
+int main(int argc, char * argv[])
+{
+    // Load GLFW
+    glfwInit();
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+
+    // Create a Window
+    auto mWindow = glfwCreateWindow(mWidth, mHeight, "OpenGL", nullptr, nullptr);
+
+    // Check for Valid Context
+    if (mWindow == nullptr) {
+        std::cerr << "Failed to Create OpenGL Context" << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    // Create Context
+    glfwMakeContextCurrent(mWindow);
+
+    // Load OpenGL Functions
+    gladLoadGL();
+    std::cerr << "OpenGL " << glGetString(GL_VERSION) << std::endl;
+
+        // Background Fill Color
+    glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
    //  // Vertices for first triangles (square)
@@ -30,7 +69,7 @@ void renderObjects()
    //      1, 2, 3    // second triangle
    //  };
 
-     // Vertices for first triangles (square)
+     // Vertices for triangle
      float vertices[] =
      {
          0.0f,  0.5f, 0.0f,  // top
@@ -81,12 +120,9 @@ void renderObjects()
         #version 330 core
         layout(location = 0) in vec3 aPos;
 
-        out vec4 vertexColor; // specify a color output to the fragment shader
-
         void main()
         {
             gl_Position = vec4(aPos, 1.0);
-            vertexColor = vec4(0.5, 0.0, 0.0, 1.0);
         }
     )";
 
@@ -111,11 +147,11 @@ void renderObjects()
         #version 330 core
         out vec4 FragColor;
 
-        in vec4 vertexColor; // the input variable from the vertex shader (same name and same type)
+        uniform vec4 ourColor; // This value gets set in the OpenGL code running on the CPU.
 
         void main()
         {
-            FragColor = vertexColor;
+            FragColor = ourColor;
         }
     )";
 
@@ -146,42 +182,6 @@ void renderObjects()
         std::cerr << "Error linking shader program:\n" << infoLog << std::endl;
     }
 
-    // Rebind VAO
-    glBindVertexArray(VAO);
-
-    // Set shader program
-    glUseProgram(shaderProgram);
-
-    // Finally draw our 2 triangles (square) using the values set in the EBO, which indexes into the VBO
-    glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-}
-
-int main(int argc, char * argv[])
-{
-    // Load GLFW
-    glfwInit();
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 0);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
-    glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
-
-    // Create a Window
-    auto mWindow = glfwCreateWindow(mWidth, mHeight, "OpenGL", nullptr, nullptr);
-
-    // Check for Valid Context
-    if (mWindow == nullptr) {
-        std::cerr << "Failed to Create OpenGL Context" << std::endl;
-        return EXIT_FAILURE;
-    }
-
-    // Create Context
-    glfwMakeContextCurrent(mWindow);
-
-    // Load OpenGL Functions
-    gladLoadGL();
-    std::cerr << "OpenGL " << glGetString(GL_VERSION) << std::endl;
-
     // Rendering Loop
     while (glfwWindowShouldClose(mWindow) == false)
     {
@@ -190,7 +190,17 @@ int main(int argc, char * argv[])
             glfwSetWindowShouldClose(mWindow, true);
         }
 
-        renderObjects();
+
+        float timeValue = static_cast<float>(glfwGetTime());
+        float greenValue = (sin(timeValue) / 2.0f) + 0.5f;
+        int vertexColorLocation = glGetUniformLocation(shaderProgram, "ourColor");
+        // Note that finding the uniform location does not require you to use the shader program first,
+        // but updating a uniform does require you to first use the program (by calling glUseProgram),
+        // because it sets the uniform on the currently active shader program.
+        glUseProgram(shaderProgram);
+        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f); // (location, r, g, b, a)
+
+        renderObjects(VAO, shaderProgram);
 
         // Flip Buffers and Draw
         glfwSwapBuffers(mWindow);

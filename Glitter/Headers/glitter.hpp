@@ -19,6 +19,6 @@
 
 // Define Some Constants
 const int mWidth = 800;
-const int mHeight = 800;
+const int mHeight = 600;
 
 #endif //~ Glitter Header
